@@ -40,7 +40,7 @@ import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase
 import {getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {getFirestore,collection,doc,setDoc,deleteDoc,onSnapshot} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 const firebaseConfig={apiKey:"AIzaSyDbVv99xuuKQd2244ofkxxS34ybpjIqp7g",authDomain:"trade-jurney.firebaseapp.com",projectId:"trade-jurney",storageBucket:"trade-jurney.firebasestorage.app",messagingSenderId:"484360384633",appId:"1:484360384633:web:22bfd615e87821d277a4a8"};
-const ALLOWED=["haidarzaky708@gmail.com","muhhaidarzak@gmail.com","daffapradiptag148@gmail.com"];
+const ALLOWED=["haidarzaky708@gmail.com","daffapradiptag148@gmail.com","muhhaidarzak@gmail.com"];
 const fapp=initializeApp(firebaseConfig),auth=getAuth(fapp),fdb=getFirestore(fapp);
 let user=null;
 const $=s=>document.querySelector(s);
