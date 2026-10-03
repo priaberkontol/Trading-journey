@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Jurnal Harian XAUUSD</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f6f7f9;--card:#fff;--tx:#1a1d24;--mut:#6b7280;--bd:#e3e6eb;--ac:#b8860b;--up:#0f8a4b;--dn:#c62828;--in:#fffbe6}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111318;--card:#1b1e26;--tx:#e8eaee;--mut:#98a0ae;--bd:#2c313c;--ac:#e0b84a;--up:#3ecf8e;--dn:#ff6b6b;--in:#262417}}
+:root[data-theme="dark"]{--bg:#111318;--card:#1b1e26;--tx:#e8eaee;--mut:#98a0ae;--bd:#2c313c;--ac:#e0b84a;--up:#3ecf8e;--dn:#ff6b6b;--in:#262417}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.4 -apple-system,"Segoe UI",Roboto,Arial,sans-serif;padding:14px}
+h1{font-size:18px;margin:0 0 10px}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.card{background:var(--card);border:2px solid var(--bd);border-radius:12px;padding:10px;text-align:left;color:var(--tx);font:inherit;cursor:pointer}
+.card.on{border-color:var(--ac)}
+.big{font-size:20px;font-weight:700;margin:2px 0}
+small,.mut{color:var(--mut);font-size:12px}
+.up{color:var(--up)}.dn{color:var(--dn)}
+.box{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.st{border:1px solid var(--bd);border-radius:8px;padding:6px 8px}.st b{display:block;font-size:15px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+input,select{font:inherit;color:var(--tx);background:var(--in);border:1px solid var(--bd);border-radius:6px;padding:4px 6px;max-width:100%}
+button.b{background:var(--ac);color:#fff;border:0;border-radius:8px;padding:7px 12px;font:inherit;font-weight:600;cursor:pointer}
+button.x{background:none;border:0;color:var(--dn);cursor:pointer;font-size:16px;font-weight:600;white-space:nowrap;padding:4px 6px}
+.wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th,td{border-bottom:1px solid var(--bd);padding:4px;text-align:right;white-space:nowrap}
+th{font-size:11px;color:var(--mut);position:sticky;top:0;background:var(--card)}
+td:first-child,th:first-child{text-align:left}
+td input{width:70px;text-align:right}td input.n{width:210px;text-align:left}td select{width:95px}
+.ro{color:var(--tx)}
+#msg{display:none;background:var(--dn);color:#fff;border-radius:8px;padding:8px 10px;margin-bottom:10px}
+</style></head><body>
+<h1>🥇 Jurnal Harian XAUUSD</h1>
+<div id="msg"></div>
+<div id="app"></div>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,onAuthStateChanged,signOut} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {getFirestore,collection,doc,setDoc,deleteDoc,onSnapshot} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+const firebaseConfig={apiKey:"AIzaSyDbVv99xuuKQd2244ofkxxS34ybpjIqp7g",authDomain:"trade-jurney.firebaseapp.com",projectId:"trade-jurney",storageBucket:"trade-jurney.firebasestorage.app",messagingSenderId:"484360384633",appId:"1:484360384633:web:22bfd615e87821d277a4a8"};
+const ALLOWED=["haidarzaky708@gmail.com","daffapradiptag148@gmail.com"];
+const fapp=initializeApp(firebaseConfig),auth=getAuth(fapp),fdb=getFirestore(fapp);
+let user=null;
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt=n=>(n<0?"-":"")+"$"+Math.abs(n).toFixed(2);
+const pct=n=>(n*100).toFixed(1)+"%";
+const cls=n=>n>0?"up":n<0?"dn":"";
+let days={},meta={n1:"Trader 1",n2:"Trader 2",m1:1000,m2:1000},cur="t1",pending=false;
+
+function calc(t){
+  const modal=+meta[t==="t1"?"m1":"m2"]||0;
+  const rows=Object.entries(days).filter(([,d])=>d.t===t).map(([id,d])=>({...d,id})).sort((a,b)=>a.date<b.date?-1:1);
+  let bal=modal,peak=modal,mdd=0,gp=0,gl=0,hp=0,hl=0,tot=0,best=0,worst=0,ok=0,bad=0;
+  rows.forEach((r,i)=>{
+    r.net=+r.pnl||0;r.awal=bal;bal+=r.net+(+r.dep||0);r.akhir=bal;
+    peak=Math.max(peak,bal);r.dd=peak>0?bal/peak-1:0;mdd=Math.min(mdd,r.dd);
+    tot+=r.net;if(r.net>0){gp+=r.net;hp++}else if(r.net<0){gl-=r.net;hl++}
+    best=i?Math.max(best,r.net):r.net;worst=i?Math.min(worst,r.net):r.net;
+    if(r.plan==="Sesuai")ok++;if(r.plan==="Melanggar")bad++;
+  });
+  return {rows,modal,bal,mdd,tot,gp,gl,hp,hl,best,worst,ok,bad,n:rows.length};
+}
+function chart(s){
+  if(!s.n)return '<div class="mut">Belum ada data untuk grafik.</div>';
+  const v=[s.modal,...s.rows.map(r=>r.akhir)],mn=Math.min(...v),mx=Math.max(...v),rg=(mx-mn)||1;
+  const p=v.map((y,i)=>(i/(v.length-1||1)*300).toFixed(1)+","+(70-(y-mn)/rg*60).toFixed(1)).join(" ");
+  return `<svg viewBox="0 0 300 80" width="100%" height="90" preserveAspectRatio="none"><polyline points="${p}" fill="none" stroke="var(--ac)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg><small>Kurva saldo (harian): ${fmt(v[0])} → ${fmt(v[v.length-1])}</small>`;
+}
+function inp(r,f,t){return `<input type="${t||"number"}" step="any" data-id="${r.id}" data-f="${f}" value="${esc(r[f]??"")}"${f==="note"?' class="n"':""}>`}
+function render(){
+  const S={t1:calc("t1"),t2:calc("t2")};
+  let h=`<div class="row mut" style="margin-bottom:8px">Masuk: ${esc(user&&user.email)} <button class="x" id="out">Keluar</button></div>`;
+  h+='<div class="cards">';
+  ["t1","t2"].forEach(t=>{const s=S[t],nm=meta[t==="t1"?"n1":"n2"];
+    h+=`<button class="card ${cur===t?"on":""}" data-t="${t}"><b>${esc(nm)}</b><div class="big ${cls(s.tot)}">${fmt(s.tot)}</div><small>ROI ${pct(s.modal?s.tot/s.modal:0)} · Saldo ${fmt(s.bal)}</small></button>`});
+  h+='</div>';
+  const s=S[cur],k=cur==="t1"?1:2;
+  const wr=s.n?s.hp/s.n:0,pf=s.gl?s.gp/s.gl:0,dis=s.ok+s.bad?s.ok/(s.ok+s.bad):0;
+  const st=[["Hari trading",s.n],["Hari profit / rugi",s.hp+" / "+s.hl],["Win rate hari",pct(wr)],
+   ["Rata-rata PnL/hari",fmt(s.n?s.tot/s.n:0)],["Hari terbaik",fmt(s.best)],["Hari terburuk",fmt(s.worst)],
+   ["Profit factor",pf.toFixed(2)],["Max drawdown",pct(s.mdd)],["Kepatuhan plan",pct(dis)]];
+  h+=`<div class="box"><div class="row"><label>Nama <input data-m="n${k}" value="${esc(meta["n"+k])}"></label>
+   <label>Modal awal ($) <input type="number" step="any" data-m="m${k}" value="${esc(meta["m"+k])}"></label></div></div>`;
+  h+='<div class="box"><div class="grid">'+st.map(x=>`<div class="st"><small>${x[0]}</small><b>${x[1]}</b></div>`).join("")+'</div></div>';
+  h+='<div class="box">'+chart(s)+'</div>';
+  const today=new Date().toISOString().slice(0,10);
+  h+=`<div class="box"><div class="row"><input type="date" id="nd" value="${today}"><button class="b" id="add">+ Tambah hari</button><small>Isi PnL harian dari platform (rugi = minus). Depo/WD: setor positif, tarik negatif.</small></div></div>`;
+  h+='<div class="box wrap"><table id="tbl"><thead><tr><th>Tanggal</th><th>Saldo awal</th><th>PnL harian</th><th>Depo/WD</th><th>Saldo akhir</th><th>DD</th><th>Disiplin</th><th>Catatan</th><th></th></tr></thead><tbody>';
+  if(!s.n)h+='<tr><td colspan="8" class="mut" style="text-align:center;padding:14px">Belum ada data. Pilih tanggal lalu tekan "+ Tambah hari".</td></tr>';
+  s.rows.slice().reverse().forEach(r=>{
+    h+=`<tr><td>${esc(r.date)}</td><td class="ro">${fmt(r.awal)}</td><td class="${cls(r.net)}">${inp(r,"pnl")}</td><td>${inp(r,"dep")}</td><td class="ro">${fmt(r.akhir)}</td><td class="${cls(r.dd)}">${pct(r.dd)}</td>
+    <td><select data-id="${r.id}" data-f="plan">${["","Sesuai","Melanggar"].map(o=>`<option value="${o}"${r.plan===o?" selected":""}>${o||"-"}</option>`).join("")}</select></td>
+    <td>${inp(r,"note","text")}</td><td><button class="x" data-del="${r.id}" title="Hapus">✕</button></td></tr>`});
+  h+='</tbody></table></div>';
+  $("#app").innerHTML=h;
+}
+function toast(t){const m=$("#msg");m.textContent=t;m.style.display="block";setTimeout(()=>m.style.display="none",6000)}
+const editing=()=>{const a=document.activeElement;return !!(a&&a.closest&&a.closest("#tbl")&&/INPUT|SELECT/.test(a.tagName))};
+async function put(col,id,obj){
+  try{await setDoc(doc(fdb,col,id),obj)}catch(e){toast("Gagal menyimpan. Pastikan login dengan email yang diizinkan.")}
+}
+const app=$("#app");
+app.addEventListener("click",async e=>{
+  if(e.target.id==="out"){signOut(auth);return}
+  if(e.target.id==="login"){const p=new GoogleAuthProvider();try{await signInWithPopup(auth,p)}catch(er){try{await signInWithRedirect(auth,p)}catch(e2){toast("Login gagal. Coba lagi.")}}return}
+  const t=e.target.closest("[data-t]");if(t){cur=t.dataset.t;render();return}
+  if(e.target.id==="add"){
+    const d=$("#nd").value;if(!d)return;const id=d+"_"+cur;
+    if(days[id]){toast("Tanggal itu sudah ada.");return}
+    const o={date:d,t:cur,pnl:0,dep:0,plan:"",note:""};
+    days[id]=o;render();await put("days",id,o);return}
+  const x=e.target.closest("[data-del]");
+  if(x){const id=x.dataset.del;
+    if(x.dataset.ok!=="1"){document.querySelectorAll("[data-del]").forEach(b=>{b.dataset.ok="";b.textContent="✕"});
+      x.dataset.ok="1";x.textContent="Hapus?";setTimeout(()=>{if(x.isConnected){x.dataset.ok="";x.textContent="✕"}},4000);return}
+    delete days[id];render();
+    try{await deleteDoc(doc(fdb,"days",id))}catch(er){toast("Gagal menghapus.")}}
+});
+app.addEventListener("change",e=>{
+  const el=e.target;
+  if(el.dataset.m){meta[el.dataset.m]=el.type==="number"?(+el.value||0):el.value;put("meta","cfg",meta);pending=true;return}
+  if(el.dataset.f){const id=el.dataset.id,f=el.dataset.f,o={...days[id]};
+    o[f]=(f==="note"||f==="plan")?el.value:(+el.value||0);days[id]=o;put("days",id,o);pending=true}
+});
+app.addEventListener("focusout",()=>setTimeout(()=>{if(pending&&!editing()){pending=false;render()}},80));
+function onData(){if(editing())pending=true;else render()}
+function gate(msg){$("#app").innerHTML=`<div class="box" style="text-align:center"><p>${msg}</p><button class="b" id="login">Masuk dengan Google</button></div>`}
+let unsubs=[];
+onAuthStateChanged(auth,u=>{
+  unsubs.forEach(f=>f());unsubs=[];user=u;days={};
+  if(!u){gate("Masuk dengan akun Google yang diizinkan untuk membuka jurnal.");return}
+  if(!ALLOWED.includes((u.email||"").toLowerCase())){gate("Akun "+esc(u.email)+" tidak diizinkan.<br>Keluar lalu masuk dengan email lain.");$("#app").insertAdjacentHTML("beforeend",'<div style="text-align:center"><button class="x" id="out">Keluar</button></div>');return}
+  cur=(u.email||"").toLowerCase()===ALLOWED[1]?"t2":"t1";
+  render();
+  const er=()=>toast("Gagal membaca data. Cek aturan keamanan Firestore.");
+  unsubs.push(onSnapshot(doc(fdb,"meta","cfg"),d=>{if(d.exists())meta={...meta,...d.data()};onData()},er));
+  unsubs.push(onSnapshot(collection(fdb,"days"),q=>{days={};q.forEach(d=>{days[d.id]=d.data()});onData()},er));
+});
+gate("Memuat...");
+</script></body></html>
